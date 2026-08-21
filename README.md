@@ -36,6 +36,29 @@ Gemini 3.7 Flash). The release will include:
   reproduce every table and figure in the paper, each tied to a run ID, model
   ID, and SHA-256 hash.
 
+## Source campaigns
+
+The 11 canonical campaigns are official, brand-owned promotional posts from
+public company accounts. Unlike UGC replies, these posts are not personal
+data, so the links themselves are listed here:
+
+| Campaign ID | Brand | Official post |
+|---|---|---|
+| starbucks_feedback_20260527 | Starbucks | <https://x.com/i/web/status/2059439461390545211> |
+| starbucks_mobile_order_20260529 | Starbucks | <https://x.com/i/web/status/2060164471969202577> |
+| starbucks_choice_20260610 | Starbucks | <https://x.com/i/web/status/2064543324430823694> |
+| stmarch_comment_20260520 | Saint Marc Cafe | <https://x.com/i/web/status/2057234917696963064> |
+| stmarch_episode_comment_20260619 | Saint Marc Cafe | <https://x.com/i/web/status/2067789466962731128> |
+| subway_new_sandwich_20260513 | Subway | <https://x.com/i/web/status/2054334554761027959> |
+| tullys_choice_20260508 | Tully's Coffee | <https://x.com/i/web/status/2052554394445709713> |
+| tullys_cookie_comment_20260509 | Tully's Coffee | <https://x.com/i/web/status/2052976953125372400> |
+| tullys_choice_reply_20260512 | Tully's Coffee | <https://x.com/i/web/status/2054320782352998892> |
+| tullys_choice_reply_20260520 | Tully's Coffee | <https://x.com/i/web/status/2056919108885839886> |
+| tullys_scene_reply_20260526 | Tully's Coffee | <https://x.com/i/web/status/2059129923659571364> |
+
+These links resolve to the brand's own post; they do not identify any UGC
+author or reveal reply content.
+
 ## What will not be included, and why
 
 - **Raw X UGC replies, brand-post reply threads, or user posting histories.**
@@ -50,14 +73,15 @@ Gemini 3.7 Flash). The release will include:
   redistributed here.
 - **Full LLM traces that embed source UGC or user context.**
 
-## For reviewers
-
 Every quantitative claim in the paper is backed by an aggregate artifact with
 a recorded run ID and hash; row-level social-media or participant data is
 intentionally out of scope for redistribution rather than missing by
-oversight. `LICENSE` and `CITATION.cff` are pending and will be added together
-with the first populated release, before any aggregate artifact is published
-here.
+oversight.
+
+## Licensing
+
+`LICENSE` and `CITATION.cff` are pending and will be added together with the
+first populated release, before any aggregate artifact is published here.
 
 ## Contact
 
