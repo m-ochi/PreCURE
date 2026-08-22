@@ -20,3 +20,4 @@ staging/
 *.key
 *.pem
 secrets/
+outputs/

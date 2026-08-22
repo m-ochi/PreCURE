@@ -1,0 +1,20 @@
+{
+  "schema_version": "synthetic-hard-case-semantic-v1",
+  "global_forbidden_rules": [],
+  "profiles": {
+    "coffee_focus": {"forbidden_rules":[]},
+    "sandwich_health": {"forbidden_rules":[]},
+    "tea_immunity": {"forbidden_rules":[]},
+    "yogurt_recovery": {"forbidden_rules":[]},
+    "cocoa_sleep": {"forbidden_rules":[]},
+    "soup_detox": {"forbidden_rules":[]}
+  },
+  "campaigns": [
+    {"campaign_id":"synthetic_coffee_focus_01","profile_id":"coffee_focus"},
+    {"campaign_id":"synthetic_sandwich_health_02","profile_id":"sandwich_health"},
+    {"campaign_id":"synthetic_tea_immunity_03","profile_id":"tea_immunity"},
+    {"campaign_id":"synthetic_yogurt_recovery_04","profile_id":"yogurt_recovery"},
+    {"campaign_id":"synthetic_cocoa_sleep_05","profile_id":"cocoa_sleep"},
+    {"campaign_id":"synthetic_soup_detox_06","profile_id":"soup_detox"}
+  ]
+}

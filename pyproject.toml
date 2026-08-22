@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "precure-campaign-optimizer"
+version = "0.1.0"
+description = "Publication-safe PreCURE campaign-expression optimizer"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  {name = "Masanao Ochi"},
+  {name = "Takeshi Sakaki"},
+]
+dependencies = []
+
+[project.scripts]
+precure = "precure.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
