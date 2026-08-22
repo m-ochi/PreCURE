@@ -4,7 +4,7 @@ Publication-safe reference implementation for the campaign-optimization core of:
 
 > **PreCURE: A Pre-Publication Decision Framework for Richer UGC in Brand-Owned Social Media Promotions**
 >
-> Masanao Ochi and Takeshi Sakaki, IEEE BigData 2026.
+> Masanao Ochi and Takeshi Sakaki.
 
 PreCURE keeps source-grounded campaign facts fixed and searches only the editable participation expression. Candidate expressions are compared using persona-conditioned synthetic responses, a four-axis UGC quality score, a response-burden penalty, a factual-drift penalty, and a deterministic fidelity gate.
 
@@ -79,7 +79,7 @@ precure \
 
 The runner requests zero-data-retention routing and denies provider data collection. It stops before starting another request after recorded provider cost reaches `--max-cost-usd`; one in-flight request can make the final total slightly exceed the cap. Provider availability and structured-output support can change; override `--model` when necessary. Only the bundled fictional data should be used with this public runner.
 
-The submitted stress test used larger, registered budgets: five iterations with three personas and three responses per persona for fixed CPS; the PrefPO-CPS experiment additionally used restarts, screening, fresh-seed confirmation, and a paired lower-confidence-bound selection rule. The compact public `prefpo_cps` runner exposes the optimization mechanism but does not claim to reproduce those exact API results or budgets.
+The full stress test used larger, registered budgets: five iterations with three personas and three responses per persona for fixed CPS; the PrefPO-CPS experiment additionally used restarts, screening, fresh-seed confirmation, and a paired lower-confidence-bound selection rule. The compact public `prefpo_cps` runner exposes the optimization mechanism but does not claim to reproduce those exact API results or budgets.
 
 ## Synthetic stress-test data
 

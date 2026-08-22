@@ -22,7 +22,7 @@ Only `Q` is computed from generated responses. `C_B` and `C_F` are scored direct
 
 ## Conservative public search space
 
-The submitted experiments contain conditions where all expression fields can be proposed and checked. This public reference runner defaults to the narrower creative-only condition:
+The full experiments contain conditions where all expression fields can be proposed and checked. This public reference runner defaults to the narrower creative-only condition:
 
 - `product` and category are outside the candidate object;
 - `offer`, `period`, and `eligibility` must remain normalized-equivalent to Original;

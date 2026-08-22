@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite the IEEE BigData 2026 paper."
+message: "If you use this software, please cite it using these metadata."
 type: software
 title: "PreCURE campaign-expression optimizer"
 version: "0.1.0"
@@ -12,12 +12,3 @@ authors:
     given-names: Takeshi
 repository-code: "https://github.com/m-ochi/PreCURE"
 url: "https://github.com/m-ochi/PreCURE"
-preferred-citation:
-  type: conference-paper
-  title: "PreCURE: A Pre-Publication Decision Framework for Richer UGC in Brand-Owned Social Media Promotions"
-  authors:
-    - family-names: Ochi
-      given-names: Masanao
-    - family-names: Sakaki
-      given-names: Takeshi
-  year: 2026
