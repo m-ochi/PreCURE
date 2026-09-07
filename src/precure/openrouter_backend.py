@@ -252,3 +252,14 @@ class OpenRouterBackend:
             max_tokens=300,
         )
         return str(data["text"]).strip()
+
+    def optimizer_text(
+        self, campaign: Campaign, prompt: str, *, purpose: str, iteration: int, seed: int
+    ) -> str:
+        data = self._complete_json(
+            prompt + "\nReturn the requested analysis or creative_hint as the JSON text field.",
+            "precure_optimizer_text", TEXT_SCHEMA, seed=seed,
+            temperature=0.0 if purpose == "ipc_analysis" else 0.4,
+            max_tokens=1600,
+        )
+        return str(data["text"]).strip()

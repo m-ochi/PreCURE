@@ -41,3 +41,7 @@ class Backend(Protocol):
         seed: int,
         preferred: Evaluation | None = None,
     ) -> str: ...
+
+    def optimizer_text(
+        self, campaign: Campaign, prompt: str, *, purpose: str, iteration: int, seed: int
+    ) -> str: ...

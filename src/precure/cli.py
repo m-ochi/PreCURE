@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Sequence
 
-from .engine import fixed_cps_search, prefpo_cps_search
+from .engine import fixed_cps_search, prefpo_cps_search, gepa_cps_search, ipc_cps_search, OPTIMIZER_PROMPT_VERSION
 from .io import load_campaigns, load_personas
 from .mock_backend import MockBackend
 from .openrouter_backend import OpenRouterBackend
@@ -31,12 +31,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_DATA / "task_c_personas.jsonl",
     )
     parser.add_argument("--backend", choices=("mock", "openrouter"), default="mock")
-    parser.add_argument("--method", choices=("fixed_cps", "prefpo_cps"), default="fixed_cps")
+    parser.add_argument("--method", choices=("fixed_cps", "prefpo_cps", "gepa_cps", "ipc_cps"), default="fixed_cps")
     parser.add_argument("--model", default="deepseek/deepseek-v4-flash")
     parser.add_argument(
         "--max-cost-usd", type=float, default=1.0,
         help="Stop OpenRouter execution after recorded cost reaches this cap.",
     )
+    parser.add_argument("--restarts", type=int, default=1)
+    parser.add_argument("--ipc-history-length", type=int, default=5)
+    parser.add_argument("--ipc-patience", type=int, default=3)
+    parser.add_argument("--reflection-minibatch-size", type=int, default=3)
     parser.add_argument("--iterations", type=int, default=5)
     parser.add_argument("--samples-per-persona", type=int, default=3)
     parser.add_argument("--personas-per-campaign", type=int, default=3)
@@ -65,7 +69,15 @@ def main(argv: Sequence[str] | None = None) -> None:
         if args.backend == "mock"
         else OpenRouterBackend(args.model, max_cost_usd=args.max_cost_usd)
     )
-    search = fixed_cps_search if args.method == "fixed_cps" else prefpo_cps_search
+    search = {"fixed_cps": fixed_cps_search, "prefpo_cps": prefpo_cps_search,
+              "gepa_cps": gepa_cps_search, "ipc_cps": ipc_cps_search}[args.method]
+    options = {}
+    if args.method in {"gepa_cps", "ipc_cps"}:
+        options["restarts"] = args.restarts
+    if args.method == "ipc_cps":
+        options.update(history_length=args.ipc_history_length, patience=args.ipc_patience)
+    if args.method == "gepa_cps":
+        options["reflection_minibatch_size"] = args.reflection_minibatch_size
     results = []
     for campaign in campaigns:
         selected_personas = personas.get(campaign.campaign_id, [])[:args.personas_per_campaign]
@@ -78,6 +90,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             iterations=args.iterations,
             samples_per_persona=args.samples_per_persona,
             seed=args.seed,
+            **options,
         ))
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -92,6 +105,13 @@ def main(argv: Sequence[str] | None = None) -> None:
                     "selected": iteration == result.selected_iteration,
                     **row.to_dict(),
                 }, ensure_ascii=False, sort_keys=True) + "\n")
+
+    with (args.output_dir / "optimizer_trace.jsonl").open("w", encoding="utf-8") as handle:
+        for result in results:
+            for event in result.optimizer_trace:
+                handle.write(json.dumps({"campaign_id": result.campaign_id,
+                                         "method": result.method, **event},
+                                        ensure_ascii=False, sort_keys=True) + "\n")
 
     summary_path = args.output_dir / "summary.csv"
     with summary_path.open("w", encoding="utf-8", newline="") as handle:
@@ -118,6 +138,8 @@ def main(argv: Sequence[str] | None = None) -> None:
             })
 
     config = {
+        "optimizer_prompt_version": OPTIMIZER_PROMPT_VERSION,
+        "search_options": options,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "backend": backend.name,
         "method": args.method,

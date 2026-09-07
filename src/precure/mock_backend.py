@@ -112,3 +112,10 @@ class MockBackend:
             f"{first}または{contexts[-1]}を一つ、理由とともに教えてください。",
         )
         return variants[iteration % len(variants)]
+
+    def optimizer_text(
+        self, campaign: Campaign, prompt: str, *, purpose: str, iteration: int, seed: int
+    ) -> str:
+        if purpose == "ipc_analysis":
+            return "Reduce response burden and ask for one concrete reason; preserve source facts."
+        return self.refine(campaign, None, iteration=iteration, seed=seed)

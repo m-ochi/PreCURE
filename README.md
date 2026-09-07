@@ -52,9 +52,11 @@ J_plan = Q - 0.10 C_B - 0.02 C_F
 
 where `C_B` is response burden and `C_F` is factual-drift risk. A candidate that fails the deterministic source gate is ineligible regardless of its score. Persona and campaign-conditioned response tendencies are combined with the paper's `eta=0.25` calibration before response generation.
 
-Two search rules are available:
+Four search rules are available:
 
 - `fixed_cps`: the paper's auditable score-feedback loop (Original plus up to four rewrites by default), returning the highest-CPS valid candidate;
+- `gepa_cps`: GEPA 0.1.1 reflective search with Pareto selection over independent persona/sample rollouts;
+- `ipc_cps`: error analysis followed by candidate rewriting using recent history, switching to best-scoring history every third step, with configurable restarts and patience;
 - `prefpo_cps`: a compact pairwise candidate-pool adaptation that contrasts the current candidate with the preferred candidate and improves the nonpreferred expression.
 
 The public runner conservatively freezes `offer`, `period`, and `eligibility` and edits only `creative_hint`. This is the search scope used by the paper's PrefPO-CPS condition and prevents protected facts from silently entering the rewrite space. See [docs/method.md](docs/method.md) for the code-to-paper map and current release boundary.
@@ -106,3 +108,29 @@ Never place API keys in the repository. `.env`, private data paths, generated ou
 ## License and citation
 
 The source code is released under the MIT License; see `LICENSE`. Citation metadata is provided in `CITATION.cff`.
+
+## GEPA-CPS and IPC-CPS
+
+```bash
+python -m pip install -e '.[gepa]'
+precure --backend mock --method gepa_cps --iterations 5 --output-dir outputs/gepa
+precure --backend mock --method ipc_cps --iterations 5 --output-dir outputs/ipc
+```
+
+IPC has no extra dependencies. GEPA uses the upstream `gepa==0.1.1` engine,
+including Pareto candidate selection and reflective minibatches; it is not an
+alias for fixed CPS. Both methods support `--restarts` (default 1).
+IPC additionally accepts `--ipc-history-length` (5) and `--ipc-patience` (3);
+GEPA accepts `--reflection-minibatch-size` (3, capped to available rollouts).
+Use `--backend openrouter --model MODEL` for LLM evaluation and optimization.
+
+For IPC, `--iterations` bounds analyzed search steps per restart; for GEPA it
+bounds proposal attempts plus Original per restart. Duplicates are cached, and
+invalid candidates cannot win. Every candidate is screened on fixed rollout
+seeds; Original remains eligible and wins ties. GEPA completes screening for
+all proposed candidates, including proposals rejected on its minibatch.
+`optimizer_trace.jsonl` records IPC analyses and proposals or GEPA reflection
+prompts and proposals, with restart/iteration indices.
+These are executable campaign-objective adaptations. The private-data paper
+results, exact historical prompts, equal-45 orchestration and held-out
+confirmation/LCB selection are not reproduced by these public commands.

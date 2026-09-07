@@ -42,3 +42,31 @@ This makes the source-protection boundary inspectable without publishing campaig
 The public pairwise runner retains the essential adaptation: evaluate candidates under CPS, contrast a preferred and nonpreferred expression, rewrite the nonpreferred expression, add nonduplicate candidates to a pool, preserve Original on ties, and exclude hard-gate failures.
 
 The registered paper run additionally used three restarts, five-response screening, an 18-response fresh-seed confirmation stage, and a paired lower-confidence-bound rule. Those orchestration and budget controls are not yet included in this minimal release. Consequently, the public runner reproduces the method's executable mechanism and input contract, not the paper's saved provider outputs.
+
+## Additional optimizer implementations
+
+- `engine.gepa_cps_search`: upstream GEPA 0.1.1 `optimize_anything`, Pareto
+  candidate selection, independent persona/sample examples, reflection on
+  scored response evidence, no merge, cached screening and restart support.
+  The per-example optimizer reward is `(CPS + 0.12) / 1.15`; this positive
+  affine transformation preserves CPS ordering. Invalid candidates receive
+  zero. The final public selection uses mean CPS over the complete screen.
+- `engine.ipc_cps_search`: explicit error-analysis call followed by a rewrite
+  call using scored expression/analysis history. Recent history is replaced
+  with highest-scoring history every third step. Restart, patience and history
+  length are configurable. Invalid rewrites do not replace the current state.
+- `Backend.optimizer_text`: dedicated optimizer prompts, implemented by both
+  OpenRouter and the deterministic offline mock. Mock text is a control-flow
+  fixture, not an approximation of LLM reflection quality.
+
+Both optimizers freeze the three protected fields structurally and apply the
+same public fidelity gate before generating responses. Their release prompt
+version and search options are recorded in `run_config.json`. Trajectories
+include all screened expressions, scores, responses and gate failures.
+The public gate and prompt set are the reference implementation described
+above; historical experiment-specific checks, provider traces and the final
+held-out confirmation/LCB stage are outside this release. Therefore this
+release enables running both search algorithms, not numerical replication of
+the paper's full experiment pipeline.
+
+Upstream GEPA: https://github.com/gepa-ai/gepa (pinned dependency: 0.1.1).
