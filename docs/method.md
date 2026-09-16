@@ -25,7 +25,11 @@ Only `Q` is computed from generated responses. `C_B` and `C_F` are scored direct
 The full experiments contain conditions where all expression fields can be proposed and checked. This public reference runner defaults to the narrower creative-only condition:
 
 - `product` and category are outside the candidate object;
-- `offer`, `period`, and `eligibility` must remain normalized-equivalent to Original;
+- `offer`, `period`, and `eligibility` are held fixed by construction, and the
+  hard-fidelity gate additionally checks that the *facts* they encode
+  (amounts, dates, negations, and the required entry action) are unchanged —
+  a rewording that preserves the same facts passes, but a drift in an amount,
+  deadline, or entry action does not;
 - only the user-facing `creative_hint` is rewritten;
 - encoded required terms, hashtags, and forbidden claims are checked deterministically.
 

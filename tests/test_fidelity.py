@@ -34,7 +34,24 @@ class FidelityTests(unittest.TestCase):
         candidate = Expression("全員に2枚", base.expression.period, base.expression.eligibility, "感想")
         report = validate_expression(base, candidate)
         self.assertFalse(report.passed)
-        self.assertIn("offer:protected_field_changed", report.violations)
+        self.assertTrue(any("offer:numeric_fact_changed" in value for value in report.violations))
+
+    def test_reworded_fact_preserving_offer_passes(self) -> None:
+        base = campaign()
+        candidate = Expression(
+            "抽選で1枚プレゼント", base.expression.period, base.expression.eligibility, "感想"
+        )
+        report = validate_expression(base, candidate)
+        self.assertTrue(report.passed)
+
+    def test_entry_action_change_fails(self) -> None:
+        base = campaign()
+        candidate = Expression(
+            base.expression.offer, base.expression.period, "#テスト をつけて投稿", base.expression.creative_hint
+        )
+        report = validate_expression(base, candidate)
+        self.assertFalse(report.passed)
+        self.assertTrue(any("entry_action_changed" in value for value in report.violations))
 
     def test_encoded_forbidden_claim_fails(self) -> None:
         base = campaign()
