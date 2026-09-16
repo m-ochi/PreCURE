@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -56,6 +57,7 @@ class OpenRouterBackend:
         timeout_seconds: int = 180,
         max_retries: int = 4,
         max_cost_usd: float = 1.0,
+        min_request_interval_seconds: float = 0.5,
     ) -> None:
         self.model = model
         self.name = f"openrouter:{model}"
@@ -65,8 +67,25 @@ class OpenRouterBackend:
         self.timeout_seconds = timeout_seconds
         self.max_retries = max_retries
         self.max_cost_usd = max_cost_usd
+        self.min_request_interval_seconds = min_request_interval_seconds
+        self._last_request_at = 0.0
+        self._throttle_lock = threading.Lock()
         self.request_count = 0
         self.cost_usd = 0.0
+
+    def _throttle(self) -> None:
+        """Space consecutive requests out so upstream per-second caps aren't tripped.
+
+        precure/engine.py evaluates candidates strictly sequentially, so this is
+        normally the only pacing needed; the lock also covers callers (e.g.
+        per-persona evaluation in the demo app) that share one backend instance
+        across a thread pool."""
+        with self._throttle_lock:
+            elapsed = time.monotonic() - self._last_request_at
+            wait = self.min_request_interval_seconds - elapsed
+            if wait > 0:
+                time.sleep(wait)
+            self._last_request_at = time.monotonic()
 
     def _complete_json(
         self,
@@ -116,6 +135,7 @@ class OpenRouterBackend:
         )
         last_error: Exception | None = None
         for attempt in range(self.max_retries):
+            self._throttle()
             try:
                 with urllib.request.urlopen(
                     request, timeout=self.timeout_seconds
@@ -132,8 +152,21 @@ class OpenRouterBackend:
             except (urllib.error.URLError, TimeoutError, KeyError, json.JSONDecodeError) as exc:
                 last_error = exc
                 if attempt + 1 < self.max_retries:
-                    time.sleep(min(8.0, 2 ** attempt + random.random()))
+                    time.sleep(self._backoff_seconds(exc, attempt))
         raise RuntimeError(f"OpenRouter request failed: {last_error}")
+
+    @staticmethod
+    def _backoff_seconds(exc: Exception, attempt: int) -> float:
+        """429s get a longer, Retry-After-aware wait; other errors keep the short backoff."""
+        if isinstance(exc, urllib.error.HTTPError) and exc.code == 429:
+            retry_after = exc.headers.get("Retry-After") if exc.headers else None
+            if retry_after is not None:
+                try:
+                    return max(1.0, float(retry_after))
+                except ValueError:
+                    pass
+            return min(30.0, 4 * 2**attempt + random.random())
+        return min(8.0, 2**attempt + random.random())
 
     @staticmethod
     def _campaign_text(campaign: Campaign, expression: Expression) -> str:
