@@ -239,6 +239,9 @@ class OpenRouterBackend:
             )
         data = self._complete_json(
             "固定情報を一切変更せず、editable participation expressionだけを日本語で書き直してください。"
+            "offer・period・eligibilityの内容はcreative_hint内で繰り返し述べないでください"
+            "（これらは投稿の別の部分として固定情報のまま提示されるため、creative_hintは参加を促す"
+            "一つか二つの観点だけに集中してください）。"
             "特定personaの属性を公開文へ埋め込まず、一つか二つの答えやすい観点に絞り、"
             "自然で具体的なUGCを促してください。根拠のない効果を要求しないでください。\n\n"
             + self._campaign_text(campaign, current.expression)

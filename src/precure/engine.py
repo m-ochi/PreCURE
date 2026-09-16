@@ -203,7 +203,10 @@ def ipc_history_window(history: list[dict], history_length: int = 5) -> list[dic
 def _optimizer_context(campaign: Campaign) -> str:
     import json
     return (
-        "Optimize only the Japanese creative_hint. Preserve offer, period and eligibility. "
+        "Optimize only the Japanese creative_hint. Preserve offer, period and eligibility "
+        "as separate fixed fields, and do not restate their content inside the creative_hint "
+        "itself — they are already conveyed separately in the final post, so the creative_hint "
+        "should contain only the participation angle/question, not a repetition of the terms. "
         "Maximize CPS = Q - 0.10 C_B - 0.02 C_F; reduce burden without inventing facts. "
         "Do not add identifying persona details. Return only the new creative_hint.\n"
         + json.dumps({"original": campaign.expression.to_dict(),
