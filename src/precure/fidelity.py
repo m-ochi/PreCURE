@@ -211,9 +211,10 @@ def validate_source_schema(source_schema: dict, campaign: Campaign, candidate: E
         if _normalize(str(term)) in context:
             violations.append(f"source_schema:forbidden_claim_added:{term}")
 
-    required_hashtags = {str(tag).casefold() for tag in source_schema.get("required_hashtags", [])}
-    present_hashtags = {tag.casefold() for tag in re.findall(r"#[^\s#]+", context)}
-    missing_hashtags = sorted(required_hashtags - present_hashtags)
+    missing_hashtags = sorted(
+        tag for tag in source_schema.get("required_hashtags", [])
+        if _normalize(str(tag)) not in context
+    )
     if missing_hashtags:
         violations.append(f"source_schema:required_hashtag_missing:missing={missing_hashtags}")
 

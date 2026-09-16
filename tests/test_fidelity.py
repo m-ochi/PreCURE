@@ -60,6 +60,12 @@ class FidelityTests(unittest.TestCase):
         self.assertFalse(report.passed)
         self.assertTrue(any("forbidden_claim_added" in value for value in report.violations))
 
+    def test_hashtag_followed_by_japanese_punctuation_passes(self) -> None:
+        base = campaign()
+        candidate = base.expression.with_creative_hint("「#テスト」であなたの好きな味を教えてください")
+        report = validate_expression(base, candidate)
+        self.assertTrue(report.passed)
+
 
 if __name__ == "__main__":
     unittest.main()
