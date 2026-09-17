@@ -157,6 +157,7 @@ def fixed_cps_search(
                 evaluated,
                 iteration=iteration,
                 seed=stable_seed(seed, campaign.campaign_id, iteration, "refine"),
+                personas=tuple(personas),
             )
             expression = campaign.expression.with_creative_hint(creative_hint)
     return SearchResult(
@@ -196,6 +197,7 @@ def prefpo_cps_search(
             preferred=preferred,
             iteration=iteration,
             seed=stable_seed(seed, campaign.campaign_id, iteration, "prefpo"),
+            personas=tuple(personas),
         )
         if hint in seen:
             continue
@@ -226,8 +228,17 @@ def ipc_history_window(history: list[dict], history_length: int = 5) -> list[dic
     return sorted(history, key=lambda row: row["score"])[-history_length:]
 
 
-def _optimizer_context(campaign: Campaign) -> str:
+def _optimizer_context(campaign: Campaign, personas: tuple[Persona, ...] = ()) -> str:
     import json
+    persona_block = ""
+    if personas:
+        profiles = "\n".join(f"- {p.text}" for p in personas)
+        persona_block = (
+            "\nThis creative_hint is being optimized for the following persona(s). Let their "
+            "stated interests, values and tone naturally inform the phrasing and angle you "
+            "propose, but do not add identifying persona details to the public-facing text "
+            "itself:\n" + profiles + "\n"
+        )
     return (
         "Optimize only the Japanese creative_hint. Preserve offer, period and eligibility "
         "as separate fixed fields, and do not restate their content inside the creative_hint "
@@ -235,6 +246,7 @@ def _optimizer_context(campaign: Campaign) -> str:
         "should contain only the participation angle/question, not a repetition of the terms. "
         "Maximize CPS = Q - 0.10 C_B - 0.02 C_F; reduce burden without inventing facts. "
         "Do not add identifying persona details. Return only the new creative_hint.\n"
+        + persona_block
         + json.dumps({"original": campaign.expression.to_dict(),
                       "source_schema": campaign.source_schema}, ensure_ascii=False)
     )
@@ -288,7 +300,7 @@ def ipc_cps_search(
             if iteration + 1 == iterations or stalled > patience:
                 break
             hint = backend.optimizer_text(
-                campaign, _optimizer_context(campaign) + "\nHistory:\n"
+                campaign, _optimizer_context(campaign, tuple(personas)) + "\nHistory:\n"
                 + json.dumps(ipc_history_window(history, history_length), ensure_ascii=False)
                 + "\nCurrent error analysis:\n" + analysis,
                 purpose="ipc_proposal", iteration=iteration,
@@ -346,7 +358,7 @@ def gepa_cps_search(
             import json
             text = prompt if isinstance(prompt, str) else json.dumps(prompt, ensure_ascii=False)
             hint = backend.optimizer_text(
-                campaign, text + "\n" + _optimizer_context(campaign),
+                campaign, text + "\n" + _optimizer_context(campaign, tuple(personas)),
                 purpose="gepa_reflection", iteration=calls,
                 seed=stable_seed(seed, campaign.campaign_id, restart, calls, "reflection"),
             )
@@ -358,7 +370,7 @@ def gepa_cps_search(
             optimize_anything(
                 seed_candidate=campaign.expression.creative_hint, evaluator=evaluator,
                 dataset=examples, objective="Maximize source-faithful Campaign Proposal Score.",
-                background=_optimizer_context(campaign),
+                background=_optimizer_context(campaign, tuple(personas)),
                 config=GEPAConfig(
                     engine=EngineConfig(seed=stable_seed(seed, restart),
                         max_candidate_proposals=iterations - 1,

@@ -111,6 +111,7 @@ class MockBackend:
         iteration: int,
         seed: int,
         preferred: Evaluation | None = None,
+        personas: tuple[Persona, ...] = (),
     ) -> str:
         contexts = campaign.source_schema.get("allowed_response_contexts") or ["期待すること"]
         first = str(contexts[iteration % len(contexts)])

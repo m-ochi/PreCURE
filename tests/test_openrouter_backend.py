@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import unittest
 
-from precure.models import AxisScores, Campaign, Evaluation, Expression, FidelityReport, RiskScores
+from precure.engine import _optimizer_context
+from precure.models import AxisScores, Campaign, Evaluation, Expression, FidelityReport, Persona, RiskScores
 from precure.openrouter_backend import OpenRouterBackend
 
 
@@ -48,6 +49,40 @@ class RefineFeedbackTests(unittest.TestCase):
         backend.refine(campaign=_campaign(expr), current=rejected, iteration=0, seed=1)
         self.assertIn("却下されました", backend.last_prompt)
         self.assertIn("risk:restates_procedural_content", backend.last_prompt)
+
+    def test_refine_includes_persona_profiles_when_given(self) -> None:
+        backend = CapturingBackend()
+        expr = _expression()
+        passing = Evaluation(
+            expr, AxisScores(0.5, 0.5, 0.5, 0.5), RiskScores(0.1, 0.1, "ok"),
+            0.5, 0.5, FidelityReport(True, ()), (),
+        )
+        persona = Persona(persona_id="p1", text="カフェ巡りが趣味の20代デザイナー")
+        backend.refine(campaign=_campaign(expr), current=passing, iteration=0, seed=1, personas=(persona,))
+        self.assertIn("カフェ巡りが趣味の20代デザイナー", backend.last_prompt)
+
+    def test_refine_omits_persona_block_when_none_given(self) -> None:
+        backend = CapturingBackend()
+        expr = _expression()
+        passing = Evaluation(
+            expr, AxisScores(0.5, 0.5, 0.5, 0.5), RiskScores(0.1, 0.1, "ok"),
+            0.5, 0.5, FidelityReport(True, ()), (),
+        )
+        backend.refine(campaign=_campaign(expr), current=passing, iteration=0, seed=1)
+        self.assertNotIn("次のペルソナ(群)に向けて", backend.last_prompt)
+
+
+class OptimizerContextTests(unittest.TestCase):
+    def test_includes_persona_profiles_when_given(self) -> None:
+        campaign = _campaign(_expression())
+        persona = Persona(persona_id="p1", text="登山とキャンプが好きな30代エンジニア")
+        text = _optimizer_context(campaign, (persona,))
+        self.assertIn("登山とキャンプが好きな30代エンジニア", text)
+
+    def test_omits_persona_block_when_none_given(self) -> None:
+        campaign = _campaign(_expression())
+        text = _optimizer_context(campaign)
+        self.assertNotIn("following persona(s)", text)
 
 
 if __name__ == "__main__":

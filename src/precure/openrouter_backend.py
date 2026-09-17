@@ -304,12 +304,21 @@ class OpenRouterBackend:
         iteration: int,
         seed: int,
         preferred: Evaluation | None = None,
+        personas: tuple[Persona, ...] = (),
     ) -> str:
         comparison = ""
         if preferred is not None:
             comparison = (
                 "\n比較対象のより良い候補:\n"
                 f"{preferred.expression.creative_hint}\nCPS={preferred.cps}\n"
+            )
+        persona_context = ""
+        if personas:
+            profiles = "\n".join(f"- {p.text}" for p in personas)
+            persona_context = (
+                "\nこの参加表現は次のペルソナ(群)に向けて最適化しています。個人が特定される"
+                "属性を公開文へ埋め込むことなく、この人たちの興味・価値観・言葉づかいの傾向に"
+                "自然に響く言い回し・切り口を選んでください:\n" + profiles + "\n"
             )
         rejection = ""
         if not current.fidelity.passed:
@@ -333,6 +342,7 @@ class OpenRouterBackend:
             + f"\ncurrent scores: axes={current.axes}, Q={current.q}, C_B={current.risks.c_b}, "
             f"C_F={current.risks.c_f}, CPS={current.cps}\n"
             + rejection
+            + persona_context
             + comparison,
             "precure_refined_expression",
             TEXT_SCHEMA,

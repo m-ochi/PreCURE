@@ -44,6 +44,7 @@ class Backend(Protocol):
         iteration: int,
         seed: int,
         preferred: Evaluation | None = None,
+        personas: tuple[Persona, ...] = (),
     ) -> str: ...
 
     def optimizer_text(
