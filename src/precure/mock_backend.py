@@ -94,6 +94,15 @@ class MockBackend:
             "deterministic burden markers and unsupported-guarantee markers",
         )
 
+    def check_restatement(
+        self, campaign: Campaign, expression: Expression, *, seed: int
+    ) -> bool:
+        text = expression.creative_hint
+        return bool(re.search(r"#\S", text)) or any(x in text for x in (
+            "フォロー", "ハッシュタグ", "引用ポスト", "引用リポスト", "リポスト",
+            "リツイート", "締切", "締め切り", "応募方法", "参加条件",
+        ))
+
     def refine(
         self,
         campaign: Campaign,

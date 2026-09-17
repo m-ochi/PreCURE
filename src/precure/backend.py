@@ -32,6 +32,10 @@ class Backend(Protocol):
         self, campaign: Campaign, expression: Expression, *, seed: int
     ) -> RiskScores: ...
 
+    def check_restatement(
+        self, campaign: Campaign, expression: Expression, *, seed: int
+    ) -> bool: ...
+
     def refine(
         self,
         campaign: Campaign,

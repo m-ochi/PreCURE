@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from precure.cli import DEFAULT_DATA, main
-from precure.engine import fixed_cps_search, prefpo_cps_search
+from precure.engine import evaluate_expression, fixed_cps_search, prefpo_cps_search
 from precure.io import load_campaigns, load_personas
 from precure.mock_backend import MockBackend
 
@@ -34,6 +34,18 @@ class EngineTests(unittest.TestCase):
         )
         self.assertEqual(result.trajectory[0].expression, self.campaign.expression)
         self.assertTrue(result.selected.fidelity.passed)
+
+    def test_procedural_restatement_is_hard_rejected(self) -> None:
+        candidate = self.campaign.expression.with_creative_hint(
+            "フォローして、指定のハッシュタグを付けて教えてください"
+        )
+        result = evaluate_expression(
+            MockBackend(), self.campaign, candidate, self.personas,
+            samples_per_persona=1, seed=1,
+        )
+        self.assertIsNone(result.cps)
+        self.assertFalse(result.fidelity.passed)
+        self.assertIn("risk:restates_procedural_content", result.fidelity.violations)
 
     def test_cli_writes_auditable_outputs(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

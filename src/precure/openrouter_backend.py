@@ -34,6 +34,15 @@ RISK_SCHEMA = {
     "required": ["c_b", "c_f", "rationale"],
     "additionalProperties": False,
 }
+RESTATEMENT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "restates_procedural": {"type": "boolean"},
+        "reason": {"type": "string"},
+    },
+    "required": ["restates_procedural", "reason"],
+    "additionalProperties": False,
+}
 TEXT_SCHEMA = {
     "type": "object",
     "properties": {"text": {"type": "string"}},
@@ -258,6 +267,35 @@ class OpenRouterBackend:
         )
         return RiskScores(float(data["c_b"]), float(data["c_f"]), str(data["rationale"]))
 
+    def check_restatement(
+        self, campaign: Campaign, expression: Expression, *, seed: int
+    ) -> bool:
+        """Judges whether creative_hint re-states the fixed participation
+        mechanics (follow/hashtag/quote-post/deadline) already carried by
+        eligibility/period. Kept as its own focused call rather than folded
+        into score_risk's prompt: a combined prompt let this slip past even
+        on a blatant case in testing, while a dedicated prompt that quotes
+        eligibility/period side-by-side caught it reliably."""
+        data = self._complete_json(
+            "以下は、SNSキャンペーンの「参加を促す呼びかけ文(creative_hint)」の審査です。\n\n"
+            "このキャンペーンの手続き情報(すでに投稿の別の場所に固定で表示されるので、"
+            "creative_hint内で繰り返す必要はありません):\n"
+            f"- 参加条件(eligibility): {expression.eligibility}\n"
+            f"- 応募期間(period): {expression.period}\n\n"
+            "審査対象のcreative_hint:\n"
+            f'"""\n{expression.creative_hint}\n"""\n\n'
+            "質問: このcreative_hintの本文は、上記の手続き情報(フォロー、ハッシュタグの記載、"
+            "引用ポスト/リポスト、締切日時など)の一部または全部を、文言を変えていても実質的に"
+            "繰り返し記載していますか？ 1文字でも該当する記述があれば true としてください。"
+            "判定理由も出力してください。",
+            "precure_restatement_check",
+            RESTATEMENT_SCHEMA,
+            seed=seed,
+            temperature=0.0,
+            max_tokens=400,
+        )
+        return bool(data["restates_procedural"])
+
     def refine(
         self,
         campaign: Campaign,
@@ -273,6 +311,17 @@ class OpenRouterBackend:
                 "\n比較対象のより良い候補:\n"
                 f"{preferred.expression.creative_hint}\nCPS={preferred.cps}\n"
             )
+        rejection = ""
+        if not current.fidelity.passed:
+            # current is the "current"/nonpreferred candidate prefpo_cps_search is
+            # rewriting away from; if it was hard-gate rejected, current.cps/axes
+            # are all zero placeholders (no scoring signal at all), so the gate's
+            # specific violation reasons are the only usable feedback here.
+            rejection = (
+                "\nこの候補は事実整合ゲートで却下されました。理由: "
+                + ", ".join(current.fidelity.violations)
+                + "\n同じ理由で却下されない書き方にしてください。\n"
+            )
         data = self._complete_json(
             "固定情報を一切変更せず、editable participation expressionだけを日本語で書き直してください。"
             "offer・period・eligibilityの内容はcreative_hint内で繰り返し述べないでください"
@@ -283,6 +332,7 @@ class OpenRouterBackend:
             + self._campaign_text(campaign, current.expression)
             + f"\ncurrent scores: axes={current.axes}, Q={current.q}, C_B={current.risks.c_b}, "
             f"C_F={current.risks.c_f}, CPS={current.cps}\n"
+            + rejection
             + comparison,
             "precure_refined_expression",
             TEXT_SCHEMA,

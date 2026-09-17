@@ -6,7 +6,9 @@ from dataclasses import dataclass
 
 from .backend import Backend
 from .fidelity import validate_expression
-from .models import AxisScores, Campaign, Evaluation, Expression, Persona, RiskScores
+from .models import (
+    AxisScores, Campaign, Evaluation, Expression, FidelityReport, Persona, RiskScores,
+)
 from .objective import calibrated_target, campaign_proposal_score, quality_term
 
 
@@ -47,6 +49,22 @@ def evaluate_expression(
             0.0,
             None,
             fidelity,
+            (),
+        )
+
+    if backend.check_restatement(campaign, expression, seed=stable_seed(seed, "restatement")):
+        # A creative_hint that re-states the fixed participation mechanics
+        # (follow/hashtag/quote-post/deadline) can still score well on the
+        # response axes, and C_F's paper-fixed weight (0.02) is far too small
+        # to price that out of CPS — so this is enforced as a hard reject
+        # rather than left to the risk penalty.
+        return Evaluation(
+            expression,
+            AxisScores(0.0, 0.0, 0.0, 0.0),
+            RiskScores(1.0, 1.0, "creative_hint restates procedural content"),
+            0.0,
+            None,
+            FidelityReport(False, fidelity.violations + ("risk:restates_procedural_content",)),
             (),
         )
 
