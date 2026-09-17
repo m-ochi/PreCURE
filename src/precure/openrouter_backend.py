@@ -210,7 +210,12 @@ class OpenRouterBackend:
         return self._axes(
             "次の架空personaがこの架空キャンペーンへ反応する場合の投稿傾向を、"
             "a（感情強度）、d_cov（内容範囲）、d_spec（具体性）、d_rea（理由説明）の"
-            "0から1で推定してください。\n\n"
+            "0から1で推定してください。"
+            "editable participation expression（呼びかけ文）が具体的な質問やお題を"
+            "提示しておらず、単にハッシュタグを付ける・投稿する・コメントするよう"
+            "促すだけの内容である場合、personaには反応すべき具体的な材料がないので、"
+            "d_spec・d_rea・d_covは低く見積もってください。キャンペーンの題材自体が"
+            "感情に訴えやすいという理由だけで高く評価しないでください。\n\n"
             + self._campaign_text(campaign, expression)
             + "\n\npersona:\n"
             + persona.text,
@@ -229,7 +234,12 @@ class OpenRouterBackend:
         data = self._complete_json(
             "次の架空personaによる自然な日本語のキャンペーン反応UGCを1件だけ生成してください。"
             "15〜120文字を目安とし、氏名、勤務先、居住地などの識別情報は書かないでください。"
-            "キャンペーンにない効果や事実を追加しないでください。\n\n"
+            "キャンペーンにない効果や事実を追加しないでください。"
+            "editable participation expression（呼びかけ文）が実際に尋ねている内容にのみ"
+            "答えてください。呼びかけ文が具体的な質問やお題を提示していない場合"
+            "（ハッシュタグを付けるだけ、投稿・コメントを促すだけなど）は、target scores"
+            "に近づけるために自分で物語やエピソードを創作しないでください。その場合は"
+            "素っ気ない短い投稿にとどめてください。\n\n"
             + self._campaign_text(campaign, expression)
             + f"\n\ntarget scores: {target}\n\npersona:\n{persona.text}",
             "precure_generated_response",
