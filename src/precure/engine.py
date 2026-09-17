@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from .backend import Backend
@@ -65,15 +66,22 @@ def evaluate_expression(
             seed=stable_seed(seed, p_index, "campaign"),
         )
         target = calibrated_target(mu, nu, eta)
-        for sample in range(samples_per_persona):
+
+        def _sample(sample: int) -> tuple[str, AxisScores]:
             item_seed = stable_seed(seed, p_index, sample)
             response = backend.generate_response(
                 campaign, expression, persona, target, seed=item_seed
             )
-            responses.append(response)
-            scores.append(
-                backend.score_response(campaign, response, seed=item_seed)
-            )
+            return response, backend.score_response(campaign, response, seed=item_seed)
+
+        # Fire the samples_per_persona rollouts for this persona concurrently
+        # (matches the paper's parallel screening); .map preserves input
+        # order in its output regardless of completion order, so results stay
+        # deterministic for a given seed.
+        with ThreadPoolExecutor(max_workers=samples_per_persona) as pool:
+            for response, score in pool.map(_sample, range(samples_per_persona)):
+                responses.append(response)
+                scores.append(score)
     if not scores:
         raise ValueError("at least one persona and one sample are required")
     mean = AxisScores(**{

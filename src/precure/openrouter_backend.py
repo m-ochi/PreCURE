@@ -70,6 +70,7 @@ class OpenRouterBackend:
         self.min_request_interval_seconds = min_request_interval_seconds
         self._last_request_at = 0.0
         self._throttle_lock = threading.Lock()
+        self._stats_lock = threading.Lock()
         self.request_count = 0
         self.cost_usd = 0.0
 
@@ -141,9 +142,11 @@ class OpenRouterBackend:
                     request, timeout=self.timeout_seconds
                 ) as response:
                     data = json.loads(response.read().decode("utf-8"))
-                self.request_count += 1
                 usage = data.get("usage") or {}
-                self.cost_usd += float(usage.get("cost", data.get("cost", 0)) or 0)
+                cost = float(usage.get("cost", data.get("cost", 0)) or 0)
+                with self._stats_lock:
+                    self.request_count += 1
+                    self.cost_usd += cost
                 content = data["choices"][0]["message"]["content"]
                 parsed = json.loads(content)
                 if not isinstance(parsed, dict):
