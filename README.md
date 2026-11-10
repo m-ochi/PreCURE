@@ -2,9 +2,11 @@
 
 Publication-safe reference implementation for the campaign-optimization core of:
 
-> **PreCURE: A Pre-Publication Decision Framework for Richer UGC in Brand-Owned Social Media Promotions**
+> **PreCURE: Pre-launch Social Media Campaign Optimization through Persona-Conditioned Response Simulation**
 >
 > Masanao Ochi and Takeshi Sakaki.
+>
+> To appear in IEEE BigData 2026.
 
 PreCURE keeps source-grounded campaign facts fixed and searches only the editable participation expression. Candidate expressions are compared using persona-conditioned synthetic responses, a four-axis UGC quality score, a response-burden penalty, a factual-drift penalty, and a deterministic fidelity gate.
 
