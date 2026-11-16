@@ -15,7 +15,7 @@ This release isolates the publication-safe campaign-expression optimization core
 | Burden and fidelity-risk penalties | `Backend.score_risk` and `RiskScores` |
 | Hard constraint \(H(\phi,\theta)\) | `validate_expression` in `src/precure/fidelity.py` |
 | CPS \(J=Q-\lambda_B C_B-\lambda_F C_F\) | `campaign_proposal_score` |
-| Fixed five-step score-feedback search | `fixed_cps_search` |
+| Sequential score-feedback search | `fixed_cps_search` (demo), `protocol.run_protocol` (equal candidates) |
 | Pairwise preference candidate-pool search | `prefpo_cps_search` |
 
 Only `Q` is computed from generated responses. `C_B` and `C_F` are scored directly from the campaign core and candidate expression, so detailed synthetic responses cannot hide a burdensome or fact-drifting instruction. The gate is evaluated before model-based scoring; an invalid candidate receives no selectable CPS.
@@ -39,13 +39,19 @@ This makes the source-protection boundary inspectable without publishing campaig
 
 `MockBackend` is deterministic and network-free. It makes overloaded fictional starts produce low-quality refusal responses and assigns transparent penalties to long-answer, photo, tagging, location, purchase-history, and unsupported-guarantee requests. It exists for testing and teaching.
 
-`OpenRouterBackend` runs the same control flow with structured model calls for persona scoring, campaign-conditioned scoring, response generation, response scoring, risk scoring, and refinement. The seed is derived from the run seed, campaign, iteration, persona, and sample so candidates receive matched, auditable rollout keys.
+`OpenRouterBackend` runs the same control flow with structured model calls for persona scoring, campaign-conditioned scoring, response generation, response scoring, risk scoring, and refinement. Screening seeds are shared across candidates; persona/sample indices provide matched, auditable rollout keys. Equal-candidate mode uses disjoint seed namespaces for screening, confirmation and final evaluation.
 
-## Difference from the registered PrefPO-CPS experiment
+## Main-paper equal-candidate experiment
 
-The public pairwise runner retains the essential adaptation: evaluate candidates under CPS, contrast a preferred and nonpreferred expression, rewrite the nonpreferred expression, add nonduplicate candidates to a pool, preserve Original on ties, and exclude hard-gate failures.
-
-The registered paper run additionally used three restarts, five-response screening, an 18-response fresh-seed confirmation stage, and a paired lower-confidence-bound rule. Those orchestration and budget controls are not yet included in this minimal release. Consequently, the public runner reproduces the method's executable mechanism and input contract, not the paper's saved provider outputs.
+`protocol.run_protocol` adds a common candidate archive, paired screening,
+independent confirmation with the 1.699 paired-adjusted-gain rule, and a further
+independent common evaluation for all four methods. The default budgets are
+45 candidates, 360 proposal attempts, five screening samples and 18 samples
+in each later stage. `analysis.summarize_comparison` reports campaign-level
+bootstrap intervals, exact sign-flip tests and Holm adjustment. The separate
+historical synthetic PrefPO stress-test orchestration is not implemented.
+See [the protocol guide](equal-candidate-protocol.md) for the implementation
+mapping and differences from the private historical code.
 
 ## Additional optimizer implementations
 
@@ -68,8 +74,9 @@ same public fidelity gate before generating responses. Their release prompt
 version and search options are recorded in `run_config.json`. Trajectories
 include all screened expressions, scores, responses and gate failures.
 The public gate and prompt set are the reference implementation described
-above; historical experiment-specific checks, provider traces and the final
-held-out confirmation/LCB stage are outside this release. Therefore this
+above; historical experiment-specific checks and provider traces are outside this
+release. The held-out confirmation/LCB stage is available in equal-candidate
+mode. Therefore this
 release enables running both search algorithms, not numerical replication of
 the paper's full experiment pipeline.
 

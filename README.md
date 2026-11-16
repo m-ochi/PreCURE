@@ -56,7 +56,7 @@ where `C_B` is response burden and `C_F` is factual-drift risk. A candidate that
 
 Four search rules are available:
 
-- `fixed_cps`: the paper's auditable score-feedback loop (Original plus up to four rewrites by default), returning the highest-CPS valid candidate;
+- `fixed_cps` (Sequential CPS): the paper's auditable score-feedback loop (Original plus up to four rewrites by default), returning the highest-CPS valid candidate;
 - `gepa_cps`: GEPA 0.1.1 reflective search with Pareto selection over independent persona/sample rollouts;
 - `ipc_cps`: error analysis followed by candidate rewriting using recent history, switching to best-scoring history every third step, with configurable restarts and patience;
 - `prefpo_cps`: a compact pairwise candidate-pool adaptation that contrasts the current candidate with the preferred candidate and improves the nonpreferred expression.
@@ -83,7 +83,7 @@ precure \
 
 The runner requests zero-data-retention routing and denies provider data collection. It stops before starting another request after recorded provider cost reaches `--max-cost-usd`; one in-flight request can make the final total slightly exceed the cap. Provider availability and structured-output support can change; override `--model` when necessary. Only the bundled fictional data should be used with this public runner.
 
-The full stress test used larger, registered budgets: five iterations with three personas and three responses per persona for fixed CPS; the PrefPO-CPS experiment additionally used restarts, screening, fresh-seed confirmation, and a paired lower-confidence-bound selection rule. The compact public `prefpo_cps` runner exposes the optimization mechanism but does not claim to reproduce those exact API results or budgets.
+The separate synthetic stress test used larger, registered budgets: five iterations with three personas and three responses per persona for fixed CPS; the PrefPO-CPS experiment additionally used restarts, screening, fresh-seed confirmation, and a paired lower-confidence-bound selection rule. The demo `prefpo_cps` runner exposes the optimization mechanism. The equal-candidate protocol below adds independent confirmation and final evaluation for the main Task C design; neither mode claims to reproduce saved API outputs.
 
 ## Synthetic stress-test data
 
@@ -134,5 +134,27 @@ all proposed candidates, including proposals rejected on its minibatch.
 `optimizer_trace.jsonl` records IPC analyses and proposals or GEPA reflection
 prompts and proposals, with restart/iteration indices.
 These are executable campaign-objective adaptations. The private-data paper
-results, exact historical prompts, equal-45 orchestration and held-out
-confirmation/LCB selection are not reproduced by these public commands.
+results and historical private prompts are not reproduced by these demo commands. Use the
+equal-candidate protocol below for the main Task C budget and selection design.
+
+## Main-paper equal-candidate protocol
+
+```bash
+python -m pip install -e '.[gepa]'
+precure --protocol equal_candidates --method all \
+  --run-id offline-control-flow-check --output-dir outputs/equal-candidates
+```
+
+This runs all four methods (Sequential CPS, IPC-CPS, GEPA-CPS, PrefPO-CPS)
+with 45 unique valid candidates including Original, five matched screening
+samples, 18 independent paired confirmation samples and 18 further common
+final-evaluation samples. Confirmation selects by paired adjusted gain with
+coefficient 1.699, retaining Original unless a revision's adjusted gain is
+positive. A 360-proposal ceiling marks unsuccessful cells incomplete.
+
+Outputs include candidate/attempt logs, per-response scores and seeds,
+confirmation decisions, final scores, code/input hashes, costs and a
+campaign-level bootstrap/sign-flip/Holm comparison. The offline mock uses
+fictional paraphrase fixtures to verify control flow; its values are not the
+paper's experimental results. See [the protocol guide](docs/equal-candidate-protocol.md)
+for scope, output details and options.

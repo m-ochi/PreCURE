@@ -101,6 +101,15 @@ class Evaluation:
     cps: float | None
     fidelity: FidelityReport
     responses: tuple[str, ...]
+    response_scores: tuple[AxisScores, ...] = ()
+    sample_seeds: tuple[int, ...] = ()
+
+    @property
+    def sample_cps(self) -> tuple[float, ...]:
+        from .objective import campaign_proposal_score, quality_term
+        return tuple(campaign_proposal_score(quality_term(row), self.risks.c_b,
+                                            self.risks.c_f)
+                     for row in self.response_scores)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -111,4 +120,7 @@ class Evaluation:
             "cps": self.cps,
             "fidelity": asdict(self.fidelity),
             "responses": list(self.responses),
+            "response_scores": [asdict(row) for row in self.response_scores],
+            "sample_seeds": list(self.sample_seeds),
+            "sample_cps": list(self.sample_cps),
         }

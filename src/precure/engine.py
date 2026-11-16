@@ -40,6 +40,8 @@ def evaluate_expression(
     seed: int,
     eta: float = 0.25,
 ) -> Evaluation:
+    if not personas or samples_per_persona < 1:
+        raise ValueError("at least one persona and one sample are required")
     fidelity = validate_expression(campaign, expression, creative_only=True)
     if not fidelity.passed:
         return Evaluation(
@@ -73,6 +75,7 @@ def evaluate_expression(
     )
     responses: list[str] = []
     scores: list[AxisScores] = []
+    sample_seeds: list[int] = []
     for p_index, persona in enumerate(personas):
         mu = backend.score_persona(
             persona, seed=stable_seed(seed, p_index, "persona")
@@ -84,6 +87,8 @@ def evaluate_expression(
             seed=stable_seed(seed, p_index, "campaign"),
         )
         target = calibrated_target(mu, nu, eta)
+
+        sample_seeds.extend(stable_seed(seed, p_index, sample) for sample in range(samples_per_persona))
 
         def _sample(sample: int) -> tuple[str, AxisScores]:
             item_seed = stable_seed(seed, p_index, sample)
@@ -109,7 +114,8 @@ def evaluate_expression(
     q_value = quality_term(mean)
     cps = campaign_proposal_score(q_value, risks.c_b, risks.c_f)
     return Evaluation(
-        expression, mean, risks, q_value, cps, fidelity, tuple(responses)
+        expression, mean, risks, q_value, cps, fidelity, tuple(responses),
+        tuple(scores), tuple(sample_seeds),
     )
 
 
@@ -148,7 +154,7 @@ def fixed_cps_search(
             expression,
             personas,
             samples_per_persona=samples_per_persona,
-            seed=stable_seed(seed, campaign.campaign_id, iteration),
+            seed=stable_seed(seed, campaign.campaign_id, "screen"),
         )
         trajectory.append(evaluated)
         if iteration + 1 < iterations:
@@ -159,7 +165,10 @@ def fixed_cps_search(
                 seed=stable_seed(seed, campaign.campaign_id, iteration, "refine"),
                 personas=tuple(personas),
             )
-            expression = campaign.expression.with_creative_hint(creative_hint)
+            if creative_hint.strip():
+                proposed = campaign.expression.with_creative_hint(creative_hint)
+                if validate_expression(campaign, proposed, creative_only=True).passed:
+                    expression = proposed
     return SearchResult(
         "fixed_cps", campaign.campaign_id, _select_best(trajectory), tuple(trajectory)
     )
@@ -184,7 +193,7 @@ def prefpo_cps_search(
         campaign.expression,
         personas,
         samples_per_persona=samples_per_persona,
-        seed=stable_seed(seed, campaign.campaign_id, 0),
+        seed=stable_seed(seed, campaign.campaign_id, "screen"),
     )
     trajectory = [original]
     seen = {campaign.expression.creative_hint}
@@ -199,7 +208,8 @@ def prefpo_cps_search(
             seed=stable_seed(seed, campaign.campaign_id, iteration, "prefpo"),
             personas=tuple(personas),
         )
-        if hint in seen:
+        hint = hint.strip()
+        if not hint or hint in seen:
             continue
         seen.add(hint)
         candidate = campaign.expression.with_creative_hint(hint)
@@ -209,14 +219,14 @@ def prefpo_cps_search(
             candidate,
             personas,
             samples_per_persona=samples_per_persona,
-            seed=stable_seed(seed, campaign.campaign_id, len(trajectory)),
+            seed=stable_seed(seed, campaign.campaign_id, "screen"),
         ))
     return SearchResult(
         "prefpo_cps", campaign.campaign_id, _select_best(trajectory), tuple(trajectory)
     )
 
 
-OPTIMIZER_PROMPT_VERSION = "public-cps-gepa-ipc-v1"
+OPTIMIZER_PROMPT_VERSION = "public-cps-gepa-ipc-v2-paired-screen"
 
 
 def ipc_history_window(history: list[dict], history_length: int = 5) -> list[dict]:
@@ -397,6 +407,8 @@ def gepa_cps_search(
         q = quality_term(axes)
         trajectory.append(Evaluation(first.expression, axes, risks, q,
             campaign_proposal_score(q, risks.c_b, risks.c_f), first.fidelity,
-            tuple(response for row in rows for response in row.responses)))
+            tuple(response for row in rows for response in row.responses),
+            tuple(score for row in rows for score in row.response_scores),
+            tuple(key for row in rows for key in row.sample_seeds)))
     return SearchResult("gepa_cps", campaign.campaign_id, _select_best(trajectory),
                         tuple(trajectory), tuple(trace))

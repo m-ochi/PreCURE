@@ -81,6 +81,8 @@ class OpenRouterBackend:
         self._throttle_lock = threading.Lock()
         self._stats_lock = threading.Lock()
         self.request_count = 0
+        self.prompt_tokens = 0
+        self.completion_tokens = 0
         self.cost_usd = 0.0
 
     def _throttle(self) -> None:
@@ -156,6 +158,8 @@ class OpenRouterBackend:
                 with self._stats_lock:
                     self.request_count += 1
                     self.cost_usd += cost
+                    self.prompt_tokens += int(usage.get("prompt_tokens", 0) or 0)
+                    self.completion_tokens += int(usage.get("completion_tokens", 0) or 0)
                 content = data["choices"][0]["message"]["content"]
                 parsed = json.loads(content)
                 if not isinstance(parsed, dict):

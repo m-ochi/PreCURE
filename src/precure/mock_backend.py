@@ -128,4 +128,14 @@ class MockBackend:
     ) -> str:
         if purpose == "ipc_analysis":
             return "Reduce response burden and ask for one concrete reason; preserve source facts."
+        if "Already evaluated invitation archive" in prompt:
+            # Finite, visibly synthetic paraphrase fixture for budget-control tests.
+            # These are not evidence of 45 materially different campaign designs.
+            contexts = campaign.source_schema.get("allowed_response_contexts") or ["期待すること"]
+            topic = str(contexts[(iteration // 64) % len(contexts)])
+            lead = ("", "よければ、", "ひとことでも、", "気軽に、")[iteration % 4]
+            request = ("楽しみな点", "気になる点", "試したい点", "期待する点")[(iteration // 4) % 4]
+            ending = ("を一つ教えてください。", "と理由を短く教えてください。",
+                      "を自由に教えてください。", "をひとことで教えてください。")[(iteration // 16) % 4]
+            return f"{lead}{topic}について{request}{ending}"
         return self.refine(campaign, None, iteration=iteration, seed=seed)
